@@ -63,13 +63,19 @@ export const login = async (credentials) => {
       return response;
     }
 
+    // Extract token from response if it exists
+    if (response.data && response.data.token) {
+      // For backward compatibility, we'll still use the token from the response
+      // This will be removed once HTTP-only cookies are fully implemented
+      console.log("Token received from server");
+    }
+
     return response;
   } catch (error) {
     console.error("Login error:", error);
     throw error;
   }
 };
-
 /**
  * Refresh the access token
  * @returns {Promise} - Promise with refresh response
