@@ -1,3 +1,4 @@
+// src/store/useAuthStore.jsx
 import { create } from "zustand";
 import {
   verifyAuthentication,
@@ -35,17 +36,36 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  // Login action
+  // Login action - FIXED to properly check API response
   login: async (credentials) => {
     set({ isAuthenticating: true, error: null });
     try {
       const response = await login(credentials);
-      const userData = response.data;
 
+      // Check if the response indicates a successful login
+      // The API returns { answer: false } for failed logins
+      if (!response.data || response.data.answer === false) {
+        // Login failed - extract error message or use a default
+        const errorMessage =
+          response.data?.message || "Invalid username or password";
+        set({
+          isAuthenticated: false,
+          isAuthenticating: false,
+          error: errorMessage,
+        });
+        return {
+          success: false,
+          error: errorMessage,
+        };
+      }
+
+      // Login successful
+      const userData = response.data;
       set({
         isAuthenticated: true,
         isAuthenticating: false,
         user: userData,
+        error: null,
       });
 
       return { success: true, data: userData };

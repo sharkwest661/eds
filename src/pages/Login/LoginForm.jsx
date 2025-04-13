@@ -1,3 +1,4 @@
+// src/pages/Login/LoginForm.jsx
 import {
   Box,
   Button,
@@ -11,6 +12,8 @@ import {
   Text,
   useToast,
   VStack,
+  Alert,
+  AlertIcon,
 } from "@chakra-ui/react";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -26,6 +29,7 @@ import {
 
 export const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState(null);
 
   const {
     register,
@@ -40,6 +44,9 @@ export const LoginForm = () => {
   const authError = useAuthStore((state) => state.error);
 
   const onSubmit = async (data) => {
+    // Clear any previous errors
+    setLoginError(null);
+
     try {
       const result = await login(data);
 
@@ -57,9 +64,14 @@ export const LoginForm = () => {
           navigate("/");
         }, 1500);
       } else {
+        // Display the error returned from the API
+        setLoginError(
+          result.error || "Login failed. Please check your credentials."
+        );
+
         toast({
-          title: "Error",
-          description: result.error || "Login failed",
+          title: "Login Failed",
+          description: result.error || "Invalid username or password",
           status: "error",
           position: "bottom-right",
           duration: 5000,
@@ -67,6 +79,9 @@ export const LoginForm = () => {
       }
     } catch (error) {
       console.error("Login error: ", error);
+
+      setLoginError("An unexpected error occurred. Please try again.");
+
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
@@ -93,6 +108,14 @@ export const LoginForm = () => {
         onKeyDown={handleKeyDown}
       >
         <VStack gap={10}>
+          {/* Show login error alert if present */}
+          {(loginError || authError) && (
+            <Alert status="error" borderRadius="md" width="100%">
+              <AlertIcon />
+              {loginError || authError}
+            </Alert>
+          )}
+
           {/* username  */}
           <FormControl
             {...registerFormControlStyle}
@@ -153,13 +176,6 @@ export const LoginForm = () => {
               </Text>
             )}
           </FormControl>
-
-          {/* Display authentication error if any */}
-          {authError && (
-            <Text color="red.500" textAlign="center">
-              {authError}
-            </Text>
-          )}
 
           <ButtonGroup
             justifyContent="space-between"
