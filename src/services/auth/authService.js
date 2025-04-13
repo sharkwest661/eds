@@ -1,3 +1,4 @@
+// src/services/auth/authService.js
 import axios from "axios";
 import { EDU_URL } from "../api/constants";
 import config from "../../config/appConfig";
@@ -53,6 +54,15 @@ authAxios.interceptors.response.use(
 export const login = async (credentials) => {
   try {
     const response = await authAxios.post(AUTH_ENDPOINTS.LOGIN, credentials);
+
+    // IMPORTANT: Check if the response indicates a failed login
+    // The API returns { answer: false } for failed logins
+    if (response.data && response.data.answer === false) {
+      // Instead of throwing an error, we return the response
+      // so the caller can handle the failure appropriately
+      return response;
+    }
+
     return response;
   } catch (error) {
     console.error("Login error:", error);
