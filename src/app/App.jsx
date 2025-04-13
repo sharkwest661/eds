@@ -33,10 +33,12 @@ import { useFavicon, useTitle } from "ahooks";
 // misc
 import { EDU_URL } from "../services/api/constants";
 import { textTemplates } from "./../utils/statics/templates";
+// CSRF Setup
+import { setupCSRF } from "../services/auth/authService";
 
 function App() {
   const initCompanyData = useCompanyStore((state) => state.initCompanyData);
-  const initToken = useAuthStore((state) => state.initToken);
+  const initAuth = useAuthStore((state) => state.initAuth);
   const initCompanyDataLoading = useCompanyStore(
     (state) => state.initCompanyDataLoading
   );
@@ -46,9 +48,31 @@ function App() {
   useTitle(textTemplates.documentTitle);
 
   useEffect(() => {
-    initToken();
-    initCompanyData();
-  }, []);
+    // Initialize authentication and company data
+    const initialize = async () => {
+      try {
+        // Setup CSRF protection (but don't fail the app if it doesn't work)
+        try {
+          await setupCSRF();
+        } catch (csrfError) {
+          console.warn(
+            "CSRF setup issue, continuing without CSRF protection:",
+            csrfError.message
+          );
+        }
+
+        // Initialize authentication
+        await initAuth();
+
+        // Initialize company data
+        initCompanyData();
+      } catch (error) {
+        console.error("Initialization error:", error);
+      }
+    };
+
+    initialize();
+  }, [initAuth, initCompanyData]);
 
   return (
     <ChakraProvider theme={theme}>

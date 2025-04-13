@@ -10,8 +10,9 @@ import {
   Button,
   Box,
   Link,
+  useToast,
 } from "@chakra-ui/react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 
 import { HamburgerDrawer } from "./HamburgerDrawer";
@@ -29,13 +30,55 @@ export const Header = () => {
       setLanguage: state.setLanguage,
     }))
   );
-  const token = useAuthStore((state) => state.token);
-  const removeToken = useAuthStore((state) => state.removeToken);
 
+  const { isAuthenticated, user, logout } = useAuthStore(
+    useShallow((state) => ({
+      isAuthenticated: state.isAuthenticated,
+      user: state.user,
+      logout: state.logout,
+    }))
+  );
+
+  const toast = useToast();
+  const navigate = useNavigate();
   const location = useLocation();
   const pagePath = location.pathname;
   const darkBgPages = ["/faq", "/exams"]; // Replace with your actual paths
   const isDarkBgPages = darkBgPages.includes(pagePath);
+
+  const handleLogout = async () => {
+    // Set loading state if needed
+    try {
+      const success = await logout();
+
+      // Always consider the user logged out locally
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out",
+        status: "success",
+        duration: 3000,
+        position: "bottom-right",
+      });
+
+      // Always navigate to login page
+      navigate("/login");
+    } catch (error) {
+      console.error("Error during logout process:", error);
+
+      // Even if there's an error, we'll still log the user out locally
+      toast({
+        title: "Partial logout",
+        description:
+          "You've been logged out, but there might have been an issue with the server.",
+        status: "warning",
+        duration: 5000,
+        position: "bottom-right",
+      });
+
+      // Navigate to login anyway
+      navigate("/login");
+    }
+  };
 
   const selectStyles = {
     borderRadius: "10px",
@@ -70,14 +113,17 @@ export const Header = () => {
       </Link>
 
       <Spacer />
-      {token && (
+      {isAuthenticated && (
         <Box mr="2rem">
           <Menu placement="bottom-end">
             <MenuButton as={Button}>
               <User />
             </MenuButton>
             <MenuList>
-              <MenuItem onClick={removeToken}>Log out</MenuItem>
+              <MenuItem onClick={handleLogout}>Log out</MenuItem>
+              {user && user.username && (
+                <MenuItem isDisabled>Logged in as: {user.username}</MenuItem>
+              )}
             </MenuList>
           </Menu>
         </Box>

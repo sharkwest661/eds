@@ -18,13 +18,11 @@ import { Eye, EyeClosed } from "@phosphor-icons/react";
 import { useNavigate } from "react-router";
 
 import { useAuthStore } from "../../store/useAuthStore";
-import { accessToken } from "../../services/api/apiService";
 import {
   registerFormControlStyle,
   registerInputStyle,
   registerLabelStyle,
 } from "../../assets/styles/chakraStyles";
-import { useLocalStorageState } from "ahooks";
 
 export const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -32,45 +30,50 @@ export const LoginForm = () => {
   const {
     register,
     handleSubmit,
-    watch,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm();
+
   const toast = useToast();
-  const token = useAuthStore((state) => state.token);
-  const setToken = useAuthStore((state) => state.setToken);
   const navigate = useNavigate();
-  const [localToken, setLocalToken] = useLocalStorageState("notSafeAuthToken", {
-    defaultValue: token,
-  });
+  const login = useAuthStore((state) => state.login);
+  const isAuthenticating = useAuthStore((state) => state.isAuthenticating);
+  const authError = useAuthStore((state) => state.error);
 
   const onSubmit = async (data) => {
     try {
-      const result = await accessToken(data);
-      if (result?.data?.answer) {
+      const result = await login(data);
+
+      if (result.success) {
         toast({
-          title: "success",
-          description: result?.data?.message,
+          title: "Success",
+          description: "Login successful",
           status: "success",
           position: "bottom-right",
+          duration: 3000,
         });
-        setToken(result?.data?.token);
-        setLocalToken(result?.data?.token);
 
-        if (result?.data?.token) {
-          setTimeout(() => {
-            navigate("/");
-          }, 1500);
-        }
+        // Redirect to home page after a short delay
+        setTimeout(() => {
+          navigate("/");
+        }, 1500);
       } else {
         toast({
-          title: "error",
-          description: result?.data?.message,
+          title: "Error",
+          description: result.error || "Login failed",
           status: "error",
           position: "bottom-right",
+          duration: 5000,
         });
       }
     } catch (error) {
-      console.error("registerUser error: ", error);
+      console.error("Login error: ", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        status: "error",
+        position: "bottom-right",
+        duration: 5000,
+      });
     }
   };
 
@@ -91,28 +94,46 @@ export const LoginForm = () => {
       >
         <VStack gap={10}>
           {/* username  */}
-          <FormControl {...registerFormControlStyle}>
+          <FormControl
+            {...registerFormControlStyle}
+            isInvalid={errors.username}
+          >
             <FormLabel {...registerLabelStyle}>Hesab adı</FormLabel>
             <Box w="65%">
               <Input
                 {...register("username", {
-                  required: true,
-                  minLength: 5,
+                  required: "Username is required",
+                  minLength: {
+                    value: 5,
+                    message: "Username must be at least 5 characters",
+                  },
                 })}
                 {...registerInputStyle}
                 placeholder="Enter username"
+                isDisabled={isAuthenticating}
               />
+              {errors.username && (
+                <Text color="red.500" mt={1} fontSize="sm">
+                  {errors.username.message}
+                </Text>
+              )}
             </Box>
           </FormControl>
 
           {/* password  */}
-          <FormControl {...registerFormControlStyle}>
+          <FormControl
+            {...registerFormControlStyle}
+            isInvalid={errors.password}
+          >
             <FormLabel {...registerLabelStyle}>Parol</FormLabel>
             <InputGroup {...registerInputStyle}>
               <Input
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter password"
-                {...register("password", { required: true })}
+                {...register("password", {
+                  required: "Password is required",
+                })}
+                isDisabled={isAuthenticating}
               />
               <InputRightElement width="4.5rem">
                 <Button
@@ -120,12 +141,25 @@ export const LoginForm = () => {
                   size="sm"
                   onClick={() => setShowPassword((prev) => !prev)}
                   variant="ghost"
+                  isDisabled={isAuthenticating}
                 >
                   {showPassword ? <EyeClosed /> : <Eye />}
                 </Button>
               </InputRightElement>
             </InputGroup>
+            {errors.password && (
+              <Text color="red.500" mt={1} fontSize="sm" ml="35%">
+                {errors.password.message}
+              </Text>
+            )}
           </FormControl>
+
+          {/* Display authentication error if any */}
+          {authError && (
+            <Text color="red.500" textAlign="center">
+              {authError}
+            </Text>
+          )}
 
           <ButtonGroup
             justifyContent="space-between"
@@ -137,9 +171,9 @@ export const LoginForm = () => {
             <Button
               colorScheme="teal"
               size="md"
-              type="submit"
               onClick={() => navigate("/")}
               paddingInline="2.2rem"
+              isDisabled={isAuthenticating}
             >
               Geri
             </Button>
@@ -148,12 +182,11 @@ export const LoginForm = () => {
               size="md"
               type="submit"
               paddingInline="2.2rem"
+              isLoading={isAuthenticating}
+              loadingText="Giriş edilir..."
             >
               İndi təsdiq et
             </Button>
-            {/* <Button colorScheme="teal" size="md" paddingInline="2.2rem">
-              Təsdiq etmədən davam et
-            </Button> */}
           </ButtonGroup>
         </VStack>
       </Box>
