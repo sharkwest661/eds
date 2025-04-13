@@ -27,6 +27,30 @@ api.interceptors.request.use(
       config.headers["X-CSRF-Token"] = csrfToken;
     }
 
+    // Get authentication token from store
+    const authStore = useAuthStore.getState();
+
+    // Check if we have a token
+    if (authStore.isAuthenticated && authStore.token) {
+      // Add token in the original format the server expects
+      config.headers["Token"] = authStore.token;
+
+      // Add token in Bearer format for newer API servers
+      config.headers["Authorization"] = `Bearer ${authStore.token}`;
+    }
+
+    // Mark data-fetching requests to prevent automatic logout
+    if (
+      config.headers &&
+      config.url &&
+      (config.url.includes("/getExams") ||
+        config.url.includes("/getExamQuestions") ||
+        config.url.includes("/getTopTopics") ||
+        config.url.includes("/statistics"))
+    ) {
+      config.headers["X-Is-Query-Request"] = "true";
+    }
+
     return config;
   },
   (error) => {
@@ -44,14 +68,25 @@ api.interceptors.response.use(
   async (error) => {
     // Handle 401 Unauthorized errors
     if (error.response?.status === 401) {
-      // Clear auth state on 401 responses
-      const authStore = useAuthStore.getState();
-      if (authStore.isAuthenticated) {
-        await authStore.logout();
-        // Only redirect to login if we're not already there
-        if (window.location.pathname !== "/login") {
-          window.location.href = "/login";
+      // Check if this is a query request (should not trigger automatic logout)
+      const isQueryRequest =
+        error.config?.headers?.["X-Is-Query-Request"] === "true";
+
+      if (!isQueryRequest) {
+        // Clear auth state on 401 responses for non-query requests
+        console.log("401 error detected, logging out user");
+        const authStore = useAuthStore.getState();
+        if (authStore.isAuthenticated) {
+          await authStore.logout();
+          // Only redirect to login if we're not already there
+          if (window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
         }
+      } else {
+        console.log(
+          "401 error in query request, not triggering automatic logout"
+        );
       }
     }
 
@@ -138,11 +173,21 @@ export const enhancedApiService = {
   // Protected API endpoints (authentication required)
   getTopics: () => apiGet("/getTopics"),
 
-  getTopTopics: () => apiGet("/getTopTopics"),
+  getTopTopics: () =>
+    apiGet(
+      "/getTopTopics",
+      {},
+      {
+        headers: { "X-Is-Query-Request": "true" },
+      }
+    ),
 
   getExamTypes: () => apiGet("/examTypes"),
 
-  getExams: (data) => apiPost("/getExams", data),
+  getExams: (data) =>
+    apiPost("/getExams", data, {
+      headers: { "X-Is-Query-Request": "true" },
+    }),
 
   getExamDetail: (id) => apiGet(`/getExamDetail/${id}`),
 

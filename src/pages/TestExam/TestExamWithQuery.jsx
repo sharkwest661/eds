@@ -82,7 +82,8 @@ const TestExamWithQuery = () => {
     submitAnswers(
       { examId: examSubjectId, answers: examAnswers },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          // Show success toast using the useToast hook
           toast({
             title: "Success",
             description: "Your answers have been submitted successfully",
@@ -95,15 +96,6 @@ const TestExamWithQuery = () => {
           setTimeout(() => {
             navigate("/statistics");
           }, 1500);
-        },
-        onError: (error) => {
-          toast({
-            title: "Error",
-            description: error.message || "Failed to submit answers",
-            status: "error",
-            duration: 5000,
-            position: "bottom-right",
-          });
         },
       }
     );

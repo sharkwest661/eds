@@ -22,6 +22,24 @@ api.interceptors.request.use(
     if (csrfToken) {
       config.headers["X-CSRF-Token"] = csrfToken;
     }
+
+    // Add token in the format the server expects
+    const authStore = useAuthStore.getState();
+    if (authStore.isAuthenticated && authStore.token) {
+      config.headers["Token"] = authStore.token; // Original format the server expects
+      config.headers["Authorization"] = `Bearer ${authStore.token}`; // New format for future compatibility
+    }
+
+    // Check if this is a query request that should not trigger automatic logout
+    if (
+      config.url &&
+      (config.url.includes("/getExams") ||
+        config.url.includes("/getExamQuestions") ||
+        config.url.includes("/getTopTopics"))
+    ) {
+      config.headers["X-Is-Query-Request"] = "true";
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -33,12 +51,25 @@ api.interceptors.response.use(
   async (error) => {
     // Handle 401 Unauthorized errors
     if (error.response?.status === 401) {
-      // Clear auth state on 401 responses
-      const authStore = useAuthStore.getState();
-      if (authStore.isAuthenticated) {
-        await authStore.logout();
-        // Optionally redirect to login page
-        window.location.href = "/login";
+      // Check if this is a query request (should not trigger automatic logout)
+      const isQueryRequest =
+        error.config?.headers?.["X-Is-Query-Request"] === "true";
+
+      if (!isQueryRequest) {
+        // Clear auth state on 401 responses
+        const authStore = useAuthStore.getState();
+        if (authStore.isAuthenticated) {
+          console.log("401 error detected, logging out user");
+          await authStore.logout();
+          // Optionally redirect to login page
+          if (window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
+        }
+      } else {
+        console.log(
+          "401 error in query request, not triggering automatic logout"
+        );
       }
     }
     return Promise.reject(error);
