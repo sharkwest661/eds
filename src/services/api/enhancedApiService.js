@@ -146,7 +146,14 @@ export const enhancedApiService = {
 
   getExamDetail: (id) => apiGet(`/getExamDetail/${id}`),
 
-  getExamQuestions: (id) => apiGet(`/getExamQuestions/${id}`),
+  getExamQuestions: (id) =>
+    apiGet(
+      `/getExamQuestions/${id}`,
+      {},
+      {
+        headers: { "X-Is-Query-Request": "true" },
+      }
+    ),
 };
 
 export default enhancedApiService;

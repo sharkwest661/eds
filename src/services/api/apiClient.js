@@ -42,11 +42,28 @@ export const createApiClient = (options = {}) => {
         config.headers["X-CSRF-Token"] = csrfToken;
       }
 
+      // For all exam-related API calls, mark them to prevent automatic logout
+      if (
+        config.url &&
+        (config.url.includes("/getExams") ||
+          config.url.includes("/getTopTopics") ||
+          config.url.includes("/getExamQuestions"))
+      ) {
+        config.headers["X-Is-Query-Request"] = "true";
+      }
+
       // Add custom tracking
       config.metadata = {
         startTime: new Date().getTime(),
         retryCount: 0,
       };
+
+      // Optionally add auth token from localStorage for backward compatibility
+      // This should be removed once HTTP-only cookies are fully implemented
+      const authStore = useAuthStore.getState();
+      if (authStore.token) {
+        config.headers["Authorization"] = `Bearer ${authStore.token}`;
+      }
 
       return config;
     },
@@ -94,13 +111,20 @@ export const createApiClient = (options = {}) => {
 
       // Handle authentication errors (401)
       if (error.response?.status === 401) {
-        // Clear auth state on 401 responses
-        const authStore = useAuthStore.getState();
-        if (authStore.isAuthenticated) {
-          await authStore.logout();
-          // Only redirect to login if we're not already there
-          if (window.location.pathname !== "/login") {
-            window.location.href = "/login";
+        // Only handle automatic logout if not a query request
+        // This allows query error boundaries to handle 401s properly
+        const isQueryRequest =
+          config.headers?.["X-Is-Query-Request"] === "true";
+
+        if (!isQueryRequest) {
+          // Clear auth state on 401 responses
+          const authStore = useAuthStore.getState();
+          if (authStore.isAuthenticated) {
+            await authStore.logout();
+            // Only redirect to login if we're not already there
+            if (window.location.pathname !== "/login") {
+              window.location.href = "/login";
+            }
           }
         }
       }
@@ -183,4 +207,61 @@ export const apiRequest = async (requestFn, options = {}) => {
 
     throw errorObject;
   }
+};
+
+/**
+ * Helper function to make GET requests
+ * @param {string} url - URL to fetch from
+ * @param {Object} params - URL parameters
+ * @param {Object} options - Additional request options
+ * @returns {Promise} - Promise with response
+ */
+export const get = (url, params = {}, options = {}) => {
+  return apiClient.get(url, {
+    params,
+    ...options,
+  });
+};
+
+/**
+ * Helper function to make POST requests
+ * @param {string} url - URL to post to
+ * @param {Object} data - Data to send
+ * @param {Object} options - Additional request options
+ * @returns {Promise} - Promise with response
+ */
+export const post = (url, data = {}, options = {}) => {
+  return apiClient.post(url, data, options);
+};
+
+/**
+ * Helper function to make PUT requests
+ * @param {string} url - URL to put to
+ * @param {Object} data - Data to send
+ * @param {Object} options - Additional request options
+ * @returns {Promise} - Promise with response
+ */
+export const put = (url, data = {}, options = {}) => {
+  return apiClient.put(url, data, options);
+};
+
+/**
+ * Helper function to make DELETE requests
+ * @param {string} url - URL to delete from
+ * @param {Object} options - Additional request options
+ * @returns {Promise} - Promise with response
+ */
+export const del = (url, options = {}) => {
+  return apiClient.delete(url, options);
+};
+
+// Export all methods
+export default {
+  client: apiClient,
+  get,
+  post,
+  put,
+  delete: del,
+  request: apiRequest,
+  create: createApiClient,
 };

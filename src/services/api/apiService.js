@@ -79,7 +79,11 @@ export const getTopics = async () => {
 
 export const getTopTopics = async () => {
   const url = "/getTopTopics";
-  return api.get(url);
+  return api.get(url, {
+    headers: {
+      "X-Is-Query-Request": "true", // Add header to prevent automatic logout
+    },
+  });
 };
 
 export const getExamTypes = async () => {
@@ -89,7 +93,11 @@ export const getExamTypes = async () => {
 
 export const getExams = async (body) => {
   const url = "/getExams";
-  return api.post(url, body);
+  return api.post(url, body, {
+    headers: {
+      "X-Is-Query-Request": "true", // Add header to prevent automatic logout
+    },
+  });
 };
 
 export const getExamDetail = async (id) => {
@@ -99,7 +107,11 @@ export const getExamDetail = async (id) => {
 
 export const getExamQuestions = async (id) => {
   const url = `/getExamQuestions/${id}`;
-  return api.get(url);
+  return api.get(url, {
+    headers: {
+      "X-Is-Query-Request": "true", // Add header to prevent automatic logout
+    },
+  });
 };
 
 // Centralized error handler
