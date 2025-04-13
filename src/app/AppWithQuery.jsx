@@ -16,13 +16,13 @@ import { ProtectedRoutes } from "./ProtectedRoutes";
 const LazyHome = lazy(() => import("./../pages/Home/Home"));
 const LazyRegister = lazy(() => import("./../pages/Register/Register"));
 const LazyLogin = lazy(() => import("./../pages/Login/Login"));
-const LazyTest = lazy(() => import("./../pages/TestExam/TestExam"));
+const LazyTest = lazy(() => import("./../pages/TestExam/TestExamWithQuery")); // Using the new query-based component
 const LazyAbout = lazy(() => import("../pages/About/About"));
 const LazyFaqPage = lazy(() => import("../pages/FAQ/FaqPage"));
 const LazyExamsPage = lazy(() => import("../pages/Exams/ExamsPageWithQuery")); // Using the new query-based component
 const LazyPaymentPage = lazy(() => import("../pages/Payment/PaymentPage"));
-const LazyStatistics = lazy(() =>
-  import("../pages/Statistics/StatisticsLayout")
+const LazyStatistics = lazy(
+  () => import("../pages/Statistics/StatisticsLayoutWithQuery") // Using the new query-based component
 );
 
 import { LoadingSpinner } from "../components/layout/LoadingSpinner";

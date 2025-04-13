@@ -58,11 +58,12 @@ export const createApiClient = (options = {}) => {
         retryCount: 0,
       };
 
-      // Optionally add auth token from localStorage for backward compatibility
-      // This should be removed once HTTP-only cookies are fully implemented
+      // Add token in the format server expects
       const authStore = useAuthStore.getState();
       if (authStore.token) {
-        config.headers["Authorization"] = `Bearer ${authStore.token}`;
+        // Add both formats to ensure compatibility
+        config.headers["Token"] = authStore.token; // Old format
+        config.headers["Authorization"] = `Bearer ${authStore.token}`; // New format
       }
 
       return config;

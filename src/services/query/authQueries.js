@@ -1,3 +1,4 @@
+// src/services/query/authQueries.js
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   checkEmail,
@@ -6,6 +7,7 @@ import {
   accessToken,
 } from "../api/apiService";
 import { login, logout, verifyAuthentication } from "../auth/authService";
+import { useAuthStore } from "../../store/useAuthStore";
 
 /**
  * Query keys for authentication-related queries
@@ -77,20 +79,31 @@ export function useRegisterUser() {
  */
 export function useLogin() {
   const queryClient = useQueryClient();
+  const setToken = useAuthStore((state) => state.setToken);
 
   return useMutation({
     mutationFn: async (credentials) => {
       const response = await login(credentials);
       return response;
     },
-    onSuccess: (data) => {
-      if (data.success) {
-        // Invalidate relevant queries after successful login
-        queryClient.invalidateQueries({ queryKey: authKeys.user() });
+    onSuccess: (response) => {
+      // Check if login was successful
+      if (response.data && response.data.token) {
+        // Update auth store
+        setToken(response.data.token);
 
-        // Set user data in query cache
-        queryClient.setQueryData(authKeys.user(), data.data);
+        // Update query cache
+        queryClient.invalidateQueries({ queryKey: authKeys.user() });
+        queryClient.setQueryData(authKeys.user(), response.data);
+
+        return { success: true, data: response.data };
       }
+
+      // If no token, login failed
+      return {
+        success: false,
+        error: response.data?.message || "Invalid credentials",
+      };
     },
   });
 }
@@ -101,18 +114,24 @@ export function useLogin() {
  */
 export function useLogout() {
   const queryClient = useQueryClient();
+  const authLogout = useAuthStore((state) => state.logout);
 
   return useMutation({
     mutationFn: async () => {
-      const response = await logout();
-      return response;
+      return await logout();
     },
     onSuccess: () => {
-      // Clear user from query cache
-      queryClient.setQueryData(authKeys.user(), null);
+      // Clear auth store
+      authLogout();
 
-      // Reset auth-related queries
-      queryClient.removeQueries({ queryKey: authKeys.all });
+      // Clear query cache
+      queryClient.setQueryData(authKeys.user(), null);
+      queryClient.invalidateQueries({ queryKey: authKeys.all });
+
+      // Clear exam-related queries
+      queryClient.invalidateQueries({ queryKey: ["exams"] });
+
+      return { success: true };
     },
   });
 }
@@ -122,6 +141,9 @@ export function useLogout() {
  * @returns {Object} Query result object
  */
 export function useUser() {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
+
   return useQuery({
     queryKey: authKeys.user(),
     queryFn: async () => {
@@ -129,10 +151,17 @@ export function useUser() {
       if (!authenticated) {
         return null;
       }
-      // In a real implementation, this would fetch user details
-      // For now, we just return authenticated status
+
+      // If we have user data in the store, use it
+      if (user) {
+        return user;
+      }
+
+      // Otherwise, return basic authenticated status
       return { authenticated };
     },
+    initialData: user || null,
+    enabled: isAuthenticated,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
