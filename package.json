@@ -1,0 +1,49 @@
+{
+  "name": "edumetrics-new",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@chakra-ui/icons": "^2.1.1",
+    "@chakra-ui/react": "^2.8.2",
+    "@emotion/react": "^11.13.0",
+    "@emotion/styled": "^11.13.0",
+    "@phosphor-icons/react": "^2.1.7",
+    "ahooks": "^3.8.1",
+    "axios": "^1.7.3",
+    "dayjs": "^1.11.12",
+    "dompurify": "^3.1.6",
+    "dotenv": "^16.4.5",
+    "framer-motion": "^11.3.24",
+    "html-react-parser": "^5.1.12",
+    "immer": "^10.1.1",
+    "react": "^18.2.0",
+    "react-credit-cards-2": "^1.0.3",
+    "react-day-picker": "^9.3.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.52.2",
+    "react-lazy-load-image-component": "^1.6.2",
+    "react-router": "^6.26.0",
+    "react-router-dom": "^6.26.0",
+    "react-spinners": "^0.14.1",
+    "recharts": "^2.12.7",
+    "zod": "^3.23.8",
+    "zustand": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "vite": "^5.1.0"
+  }
+}

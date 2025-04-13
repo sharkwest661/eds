@@ -1,0 +1,8 @@
+/* daypicker styling  */
+.rdp-root {
+  --rdp-accent-color: green !important;
+  --rdp-accent-background-color: #f0f0f0 !important; /* Change the accent background color. */
+  /* Add more CSS variables here. */
+  --rdp-day-width: 2.5rem !important;
+  --rdp-day-height: 2.5rem !important;
+}
